@@ -12,11 +12,10 @@ from torchvision import models
 def predict(
     model: nn.Module,
     image: Image.Image,
-    class_names: List[str],
     image_size: Tuple[int, int] = (224, 224),
     transform=None,
     device: Union[None, str, torch.device] = "cpu",
-) -> str:
+) -> int:
     if transform is not None:
         image_transform = transform
     else:
@@ -36,7 +35,7 @@ def predict(
         transformed_image = image_transform(image).unsqueeze(dim=0)
         target_image_pred = model(transformed_image.to(device))
 
-    return class_names[torch.argmax(target_image_pred, dim=1).item()]
+    return torch.argmax(target_image_pred, dim=1).item()
 
 
 model = models.efficientnet_b0()
@@ -49,7 +48,9 @@ model.load_state_dict(torch.load("model0.pth", map_location=torch.device("cpu"))
 
 st.title("Image classification with Streamlit")
 
-uploaded_file = st.file_uploader("Upload an image", type="jpg")
+col1, col2 = st.columns(2)
+
+uploaded_file = col1.file_uploader("Upload an image", type="jpg")
 
 class_names = [
     "dress",
@@ -65,15 +66,54 @@ class_names = [
 ]
 
 if uploaded_file is not None:
-    col1, col2 = st.columns(2)
-
     image = Image.open(uploaded_file)
     col1.image(image, caption="Uploaded image", use_column_width=True)
 
     predictions = predict(
         model=model,
         image=image,
-        class_names=class_names,
     )
-    col2.header("Predictions")
-    col2.subheader(f"{predictions}")
+    col2.header("Product")
+
+    col2.text_input(
+        label="Title",
+        placeholder="eg: 'summer dress' or 'running shirt'",
+        max_chars=None,
+    )
+
+    col2.text_input(
+        label="brand", placeholder="What's the product's brand?", max_chars=None
+    )
+    col2.checkbox(label="No brand", value=False)
+
+    col2.text_area(
+        label="description",
+        placeholder="eg: 'Vintage floral dress, size S. Good condition with minor wear. Great for retro-themed parties!'",
+    )
+
+    col2.checkbox(label="Used?", value=True)
+
+    col2.selectbox(
+        label="category",
+        options=class_names,
+        index=predictions,
+        label_visibility="visible",
+    )
+    col2.selectbox(
+        label="sub-category",
+        options=class_names,
+        index=predictions,
+        label_visibility="visible",
+    )
+    col2.selectbox(
+        label="characteristics",
+        options=class_names,
+        index=predictions,
+        label_visibility="visible",
+    )
+    col2.selectbox(
+        label="department",
+        options=class_names,
+        index=predictions,
+        label_visibility="visible",
+    )
