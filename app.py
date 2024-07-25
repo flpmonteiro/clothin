@@ -9,18 +9,6 @@ from openai import OpenAI
 api_key = os.getenv("OPENAI_API_KEY")
 client = OpenAI(api_key=api_key)
 
-departments = [
-    "men",
-    "women",
-    "children",
-    "home&decor",
-    "electronics",
-    "books&stationary",
-    "antiquity",
-    "pets",
-    "other",
-]
-
 categories = {
     "women": {
         "accessories": [
@@ -151,13 +139,9 @@ categories = {
 
 
 def get_index(department, category, subcategory, categories=categories):
-    department_keys = list(categories.keys())
-    category_keys = list(categories[department].keys())
-    subcategory_keys = categories[department][category]
-
-    department_index = department_keys.index(department)
-    category_index = category_keys.index(category)
-    subcategory_index = subcategory_keys.index(subcategory)
+    department_index = list(categories.keys()).index(department)
+    category_index = list(categories[department].keys()).index(category)
+    subcategory_index = categories[department][category].index(subcategory)
 
     return department_index, category_index, subcategory_index
 
@@ -240,6 +224,7 @@ for key, value in predictions.items():
     if key not in st.session_state:
         st.session_state[key] = value  # default index
 
+department_index, category_index, subcategory_index = None, None, None
 if uploaded_file is not None:
     col1.image(uploaded_file, caption="Uploaded image", use_column_width=True)
 
@@ -250,9 +235,11 @@ if uploaded_file is not None:
     predictions = analyze_image(image_b64)
     st.write(predictions)
 
-    department_index, category_index, subcategory_index = get_index(
-        predictions["department"], predictions["category"], predictions["subcategory"]
-    )
+    # department_index, category_index, subcategory_index = get_index(
+    #     predictions["department"], predictions["category"], predictions["subcategory"]
+    # )
+
+    department_index, category_index, subcategory_index = 0, 2, 3
     st.write(department_index, category_index, subcategory_index)
     for key, value in predictions.items():
         st.session_state[key] = predictions[key]
@@ -279,23 +266,24 @@ col2.text_area(
 
 col2.checkbox(label="Used?", value=True)
 
+
 selected_department = col2.selectbox(
     label="Department",
     options=categories.keys(),
-    # index=departments.index(st.session_state["department"]),
+    index=department_index,
     label_visibility="visible",
 )
 
 selected_category = col2.selectbox(
     label="Category",
-    options=categories.get(selected_department).keys(),
-    # index=categories.index(st.session_state["category"]),
+    options=categories.get(selected_department, {}).keys(),
+    index=category_index,
     label_visibility="visible",
 )
 
 col2.selectbox(
     label="Sub-Category",
-    options=categories.get(selected_department).get(selected_category),
-    # index=categories.index(st.session_state["category"]),
+    options=categories.get(selected_department, {}).get(selected_category, {}),
+    index=subcategory_index,
     label_visibility="visible",
 )
