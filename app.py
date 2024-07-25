@@ -9,139 +9,121 @@ from openai import OpenAI
 api_key = os.getenv("OPENAI_API_KEY")
 client = OpenAI(api_key=api_key)
 
+departments = [
+    "women",
+    "men",
+    "children",
+    "other",
+]
+
 categories = {
-    "women": {
-        "accessories": [
-            "glasses",
-            "watches",
-            "jewelry & costume jewelry",
-            "scarves",
-            "belts",
-            "headscarves",
-            "fans",
-            "gloves",
-            "ponchos",
-            "beanies",
-            "hats",
-            "hair accessories",
-        ],
-        "clothes": [
-            "blouses",
-            "vests",
-            "pants",
-            "shirts",
-            "coats & jackets",
-            "jumpsuits",
-            "skirts",
-            "shorts & bermudas",
-            "suits",
-            "dresses",
-            "kimonos",
-            "beach",
-            "intimate fashion",
-            "pajamas",
-            "socks",
-            "costumes",
-        ],
-        "beauty": ["makeup", "skincare", "perfumes", "hair", "nails", "accessories"],
-        "shoes": [
-            "boots",
-            "sandals & flats",
-            "ballet flats",
-            "shoes",
-            "sneakers",
-            "flip-flops",
-            "mules",
-            "slippers",
-            "accessories",
-        ],
-        "bags": [
-            "trunk",
-            "briefcase",
-            "bucket bag",
-            "wallet & document holder",
-            "messenger bag",
-            "clutch",
-            "crossbody",
-            "sports bag",
-            "fan",
-            "suitcase",
-            "handbag",
-            "messenger bag",
-            "mini bag",
-            "backpack",
-            "toiletry bag",
-            "shoulder bag",
-            "parts & accessories",
-            "fanny pack",
-            "satchel",
-            "crossbody bag",
-            "tote",
-            "others",
-        ],
-        "other": [],
-    },
-    "men": {
-        "accessories": [
-            "glasses",
-            "watches",
-            "hats",
-            "belts",
-            "ties",
-            "scarves",
-            "scarf",
-            "ponchos",
-            "wallets",
-            "beanies",
-            "gloves",
-            "jewelry & costume jewelry",
-            "hair accessories",
-        ],
-        "beauty": ["perfumes", "skincare", "hair"],
-        "shoes": [
-            "boots",
-            "sneakers",
-            "sandals & flats",
-            "shoes",
-            "flip-flops",
-            "mules",
-            "slippers",
-            "accessories",
-        ],
-        "clothing": [
-            "shorts & bermudas",
-            "suits",
-            "coats & jackets",
-            "pants",
-            "shirts",
-            "blouses",
-            "vests",
-            "jumpsuits",
-            "kimonos",
-            "pajamas",
-            "socks",
-            "underwear",
-            "beachwear",
-            "costumes",
-        ],
-        "bags": [
-            "fanny pack",
-            "messenger bag",
-            "briefcase",
-            "backpack",
-            "suitcase",
-            "sports bag",
-            "parts & accessories",
-        ],
-        "other": [],
-    },
+    "women": ["accessories", "bags", "beauty", "clothes", "shoes", "others"],
+    "men": ["accessories", "bags", "beauty", "clothes", "shoes", "others"],
+    "children": [
+        "accessories",
+        "bags",
+        "clothes",
+        "shoes",
+        "toys",
+        "others",
+    ],
+    "other": [],
+}
+
+subcategories = {
+    "accessories": [
+        "beanies",
+        "belts",
+        "fans",
+        "glasses",
+        "gloves",
+        "hair accessories",
+        "hats",
+        "headscarves",
+        "jewelry",
+        "ponchos",
+        "scarves",
+        "ties",
+        "wallets",
+        "watches",
+        "others",
+    ],
+    "clothes": [
+        "beach",
+        "blouses",
+        "coats & jackets",
+        "costumes",
+        "dresses",
+        "intimate fashion",
+        "jumpsuits",
+        "kimonos",
+        "pajamas",
+        "pants",
+        "shirts",
+        "shorts",
+        "skirts",
+        "socks",
+        "suits",
+        "sweaters",
+        "vests",
+        "others",
+    ],
+    "beauty": [
+        "accessories",
+        "hair",
+        "makeup",
+        "nails",
+        "others",
+        "perfumes",
+        "skincare",
+    ],
+    "shoes": [
+        "ballet flats",
+        "boots",
+        "flip-flops",
+        "sandals & flats",
+        "slippers",
+        "sneakers",
+        "others",
+    ],
+    "bags": [
+        "backpack",
+        "briefcase",
+        "bucket bag",
+        "clutch",
+        "crossbody",
+        "fan",
+        "fanny pack",
+        "handbag",
+        "messenger bag",
+        "mini bag",
+        "parts & accessories",
+        "satchel",
+        "shoulder bag",
+        "sports bag",
+        "suitcase",
+        "toiletry bag",
+        "tote",
+        "trunk",
+        "wallet & document holder",
+        "others",
+    ],
+    "toys": [],
+    "others": [],
 }
 
 
-def get_index(department, category, subcategory, categories=categories):
-    department_index = list(categories.keys()).index(department)
-    category_index = list(categories[department].keys()).index(category)
-    subcategory_index = categories[department][category].index(subcategory)
+def get_index(
+    department,
+    category,
+    subcategory,
+    departments=departments,
+    categories=categories,
+    subcategories=subcategories,
+):
+    department_index = departments.index(department)
+    category_index = categories.get(department).index(category)
+    subcategory_index = subcategories.get(category).index(subcategory)
 
     return department_index, category_index, subcategory_index
 
@@ -157,29 +139,40 @@ predictions = {
 
 def analyze_image(image_b64, categories: dict = categories):
     system_prompt = """
-    You are an agent specialized in analyzing images of products to create an
-    appropriate title, description, and tag them with keywords that could be
-    used to create an ad for these items on a marketplace.
+    You are an AI agent trained to analyze product images and generate appropriate marketplace ad content.
 
-    You will be provided with:
-    - an image
-    - a dictionary of possible departments, their possible categories, and their sub-categories
+    The possible departments are:
+    - Men
+    - Women
+    - Children
+    - Other
 
-    Your goal is then
-    - write a short informal title for the marketplace ad
-    - write a informal description for the item, with up to 350 characters
-    - to pick a department that best describe the item
-    - to pick a category and a sub-category that best describe the item
+    The possible categories and their sub-categories are:
 
-    Return the keywords in json format, like this:
+    - Accessories: beanies, belts, fans, glasses, gloves, hair accessories, hats, headscarves, jewelry, ponchos, scarves, ties, wallets, watches, others
+    - Bags: backpack, briefcase, bucket bag, clutch, crossbody, fan, fanny pack, handbag, messenger bag, mini bag, parts & accessories, satchel, shoulder bag, sports bag, suitcase, toiletry bag, tote, trunk, wallet & document holder, others
+    - Beauty: accessories, hair, makeup, nails, others, perfumes, skincare
+    - Clothes: beach, blouses, coats & jackets, costumes, dresses, intimate fashion, jumpsuits, kimonos, pajamas, pants, shirts, shorts, skirts, socks, suits, sweaters, vests, others
+    - Shoes: ballet flats, boots, flip-flops, sandals & flats, slippers, sneakers, others
+    - Toys: (No subcategories)
+    - Others: (No subcategories)
+
+    Your tasks are:
+    - Create a short, informal ad title
+    - Write an informal description of up to 350 characters
+    - Select the correct department for the item
+    - Select the appropriate category and sub-category
+
+    Return the output in JSON format:
     {
         'title': 'brand summer dress',
         'description': 'Vintage floral dress, size S. Good condition with minor wear. Great for retro-themed parties!',
         'department': 'women',
         'category': 'clothes',
-        'subcategory': 'blouses',
+        'subcategory': 'blouses'
     }
     """
+
     headers = {"Content-Type": "application/json", "Authorization": f"Bearer {api_key}"}
     payload = {
         "model": "gpt-4o-mini",
@@ -233,14 +226,11 @@ if uploaded_file is not None:
     image_b64 = base64.b64encode(image_bytes).decode("utf-8")
 
     predictions = analyze_image(image_b64)
-    st.write(predictions)
 
-    # department_index, category_index, subcategory_index = get_index(
-    #     predictions["department"], predictions["category"], predictions["subcategory"]
-    # )
+    department_index, category_index, subcategory_index = get_index(
+        predictions["department"], predictions["category"], predictions["subcategory"]
+    )
 
-    department_index, category_index, subcategory_index = 0, 2, 3
-    st.write(department_index, category_index, subcategory_index)
     for key, value in predictions.items():
         st.session_state[key] = predictions[key]
 
@@ -276,14 +266,14 @@ selected_department = col2.selectbox(
 
 selected_category = col2.selectbox(
     label="Category",
-    options=categories.get(selected_department, {}).keys(),
+    options=categories.get(selected_department, {}),
     index=category_index,
     label_visibility="visible",
 )
 
 col2.selectbox(
     label="Sub-Category",
-    options=categories.get(selected_department, {}).get(selected_category, {}),
+    options=subcategories.get(selected_category, {}),
     index=subcategory_index,
     label_visibility="visible",
 )
