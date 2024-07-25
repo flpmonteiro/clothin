@@ -207,25 +207,26 @@ def analyze_image(image_b64, categories: dict = categories):
     return json.loads(response_data["choices"][0]["message"]["content"])
 
 
-st.title("Image classification with Streamlit")
+st.title("AI-Powered Product Ad Generator")
 
-col1, col2 = st.columns(2)
-
-uploaded_file = col1.file_uploader("Upload an image", type="jpg")
+st.sidebar.header("Upload an Image")
+uploaded_file = st.sidebar.file_uploader("", type="jpg")
 
 for key, value in predictions.items():
     if key not in st.session_state:
         st.session_state[key] = value  # default index
 
 department_index, category_index, subcategory_index = None, None, None
+
 if uploaded_file is not None:
-    col1.image(uploaded_file, caption="Uploaded image", use_column_width=True)
+    st.sidebar.image(uploaded_file, caption="Uploaded image", use_column_width=True)
 
     # Convert the uploaded file to bytes
     image_bytes = uploaded_file.getvalue()
     image_b64 = base64.b64encode(image_bytes).decode("utf-8")
 
-    predictions = analyze_image(image_b64)
+    with st.spinner("Analyzing image..."):
+        predictions = analyze_image(image_b64)
 
     department_index, category_index, subcategory_index = get_index(
         predictions["department"], predictions["category"], predictions["subcategory"]
@@ -234,44 +235,45 @@ if uploaded_file is not None:
     for key, value in predictions.items():
         st.session_state[key] = predictions[key]
 
-col2.header("Product")
 
-col2.text_input(
+st.header("Product")
+
+st.text_input(
     value=st.session_state["title"],
     label="Title",
     placeholder="eg: 'summer dress' or 'running shirt'",
     max_chars=None,
 )
 
-col2.text_input(
-    label="brand", placeholder="What's the product's brand?", max_chars=None
-)
-col2.checkbox(label="No brand", value=False)
-
-col2.text_area(
+st.text_area(
     value=st.session_state["description"],
     label="description",
     placeholder="eg: 'Vintage floral dress, size S. Good condition with minor wear. Great for retro-themed parties!'",
 )
 
+col1, col2 = st.columns(2)
+
+col1.text_input(
+    label="brand", placeholder="What's the product's brand?", max_chars=None
+)
 col2.checkbox(label="Used?", value=True)
 
 
-selected_department = col2.selectbox(
+selected_department = st.selectbox(
     label="Department",
     options=categories.keys(),
     index=department_index,
     label_visibility="visible",
 )
 
-selected_category = col2.selectbox(
+selected_category = st.selectbox(
     label="Category",
     options=categories.get(selected_department, {}),
     index=category_index,
     label_visibility="visible",
 )
 
-col2.selectbox(
+st.selectbox(
     label="Sub-Category",
     options=subcategories.get(selected_category, {}),
     index=subcategory_index,
